@@ -99,7 +99,7 @@
   .ctx-sep{height:1px;background:var(--border);margin:0.25rem 0}
   .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:1rem;animation:fadeIn 0.18s ease}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-  .modal{background:var(--card);border:1px solid var(--border);padding:2rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.6);animation:fadeUp 0.22s ease}
+  .modal{background:var(--card);border:1px solid var(--border);padding:2rem;border-radius:20px;width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05) inset;animation:fadeUp 0.22s ease}
   #modal-content{display:flex;flex-direction:column;flex:1;min-height:0;max-height:100%}
   .modal h3{font-size:1.05rem;font-weight:700;margin-bottom:1.2rem}
   .modal.img-preview{background:#000;border-color:#000;padding:0;width:90vw;height:90vh;max-width:90vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
@@ -779,7 +779,7 @@ function updateBreadcrumb(){
 
 // ── NEW FOLDER ────────────────────────────────────────────────────
 function showNewFolderModal(){
-  showModal(`<h3>New Folder</h3><div class="field"><label>Folder Name</label><input type="text" id="new-folder-name" placeholder="my folder"/></div><div id="new-folder-msg"></div><div style="display:flex;gap:0.75rem;margin-top:0.5rem"><button class="btn btn-primary" style="margin-top:0" onclick="createFolder()">Create Folder</button><button class="btn btn-ghost" style="margin-top:0" onclick="closeModal()">Cancel</button></div>`);
+  showModal(`<h3>New Folder</h3><div class="field"><label>Folder Name</label><input type="text" id="new-folder-name" placeholder="my folder" style="border-radius:10px;padding:0.8rem 1rem"/></div><div id="new-folder-msg"></div><div style="display:flex;gap:0.75rem;margin-top:1.5rem"><button class="btn btn-primary" style="margin:0;flex:1;border-radius:20px" onclick="createFolder()">Create</button><button class="btn btn-ghost" style="margin:0;flex:1;border-radius:20px" onclick="closeModal()">Cancel</button></div>`);
   setTimeout(()=>document.getElementById('new-folder-name').focus(),100);
 }
 async function createFolder(){
@@ -1227,7 +1227,7 @@ async function downloadFile(fileEntry){
   const sorted=[...(fileEntry.chunks||[])].sort((a,b)=>a.chunkIndex-b.chunkIndex);
   const mime=fileEntry.mimeType||'application/octet-stream';
 
-  showModal(`<h3>Downloading ${escHtml(fileEntry.name)}</h3><div class="upload-progress-bar" style="margin:1rem 0"><div class="upload-progress-fill" id="dl-fill" style="width:0%"></div></div><div id="dl-stat" style="font-size:0.8rem;color:var(--text3)">Starting...</div>`);
+  showModal(`<div style="text-align:center"><h3 style="margin-bottom:0.5rem;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Downloading ${escHtml(fileEntry.name)}</h3><div class="upload-progress-bar" style="margin:1.5rem 0"><div class="upload-progress-fill" id="dl-fill" style="width:0%"></div></div><div id="dl-stat" style="font-size:0.85rem;color:var(--text3)">Preparing download...</div></div>`);
   document.getElementById('modal-overlay').onclick=null; // locked during download
 
   const setProgress=(pct,msg)=>{
@@ -1331,7 +1331,7 @@ function showItemMenu(event,itemId,itemType){
     addCtxItem(menu,'Delete',async()=>{
       closeCtxMenu();
       if(!await confirmModal('Delete File',`Delete "${item.name}"? This cannot be undone.`,'Delete','Cancel'))return;
-      showModal('<h3>Deleting...</h3><div class="spinner" style="margin:1rem auto;display:block"></div>');
+      showModal('<div style="display:flex;align-items:center;justify-content:center;gap:1rem;padding:1rem 0"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0"></div><span style="font-weight:600;font-size:1.1rem">Deleting item...</span></div>');
       _deleteActive=true;document.getElementById('modal-overlay').onclick=null;
       try{await deleteFileEntry(item);await saveFolderMeta(currentFolderMeta);await saveConfig();updateStats();}
       catch(e){showBusyToast('✗ '+e.message);}
@@ -1344,7 +1344,7 @@ function showItemMenu(event,itemId,itemType){
     addCtxItem(menu,'Delete',async()=>{
       closeCtxMenu();
       if(!await confirmModal('Delete Folder',`Delete "${item.name}" and all its contents?`,'Delete','Cancel'))return;
-      showModal('<h3>Deleting...</h3><div class="spinner" style="margin:1rem auto;display:block"></div>');
+      showModal('<div style="display:flex;align-items:center;justify-content:center;gap:1rem;padding:1rem 0"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0"></div><span style="font-weight:600;font-size:1.1rem">Deleting folder...</span></div>');
       _deleteActive=true;document.getElementById('modal-overlay').onclick=null;
       try{await deleteFolderEntry(item);await saveFolderMeta(currentFolderMeta);await saveConfig();updateStats();}
       catch(e){showBusyToast('✗ '+e.message);}
@@ -1449,7 +1449,7 @@ function moveFile(item) {
 
 // ── RENAME ────────────────────────────────────────────────────────
 function renameItem(item,type){
-  showModal(`<h3>Rename</h3><div class="field"><label>New Name</label><input type="text" id="rename-input" value="${escHtml(item.name)}"/></div><div id="rename-msg"></div><button class="btn btn-primary" onclick="doRename('${item.id}','${type}')">Rename</button><button class="btn btn-ghost" onclick="closeModal()">Cancel</button>`);
+  showModal(`<h3>Rename</h3><div class="field"><label>New Name</label><input type="text" id="rename-input" value="${escHtml(item.name)}" style="border-radius:10px;padding:0.8rem 1rem"/></div><div id="rename-msg"></div><div style="display:flex;gap:0.75rem;margin-top:1.5rem"><button class="btn btn-primary" style="margin:0;flex:1;border-radius:20px" onclick="doRename('${item.id}','${type}')">Rename</button><button class="btn btn-ghost" style="margin:0;flex:1;border-radius:20px" onclick="closeModal()">Cancel</button></div>`);
   setTimeout(()=>{const el=document.getElementById('rename-input');el.focus();el.select()},100);
 }
 async function doRename(itemId,type){
@@ -1477,7 +1477,7 @@ function updateSelectionButtons(){
 async function downloadSelected(){for(const id of selectedItems){const f=(currentFolderMeta.files||[]).find(f=>f.id===id);if(f)await downloadFile(f)}}
 async function deleteSelected(){
   if(!await confirmModal('Delete Selected',`Delete ${selectedItems.size} selected item(s)?`,'Delete','Cancel'))return;
-  showModal('<h3>Deleting...</h3><div class="spinner" style="margin:1rem auto;display:block"></div>');
+  showModal('<div style="display:flex;align-items:center;justify-content:center;gap:1rem;padding:1rem 0"><div class="spinner" style="width:24px;height:24px;border-width:2px;margin:0"></div><span style="font-weight:600;font-size:1.1rem">Deleting items...</span></div>');
   try{
     const ps=[];
     for(const id of selectedItems){
@@ -1555,7 +1555,7 @@ function closeModal(event){
 }
 function confirmModal(title,message,okLabel,cancelLabel){
   return new Promise(resolve=>{
-    showModal(`<h3>${escHtml(title)}</h3><p style="color:var(--text2);font-size:0.85rem;margin:1rem 0;line-height:1.6">${escHtml(message)}</p><button class="btn btn-danger" onclick="window._confirmResolve(true)">${escHtml(okLabel)}</button><button class="btn btn-ghost" onclick="window._confirmResolve(false)">${escHtml(cancelLabel)}</button>`);
+    showModal(`<h3>${escHtml(title)}</h3><p style="color:var(--text2);font-size:0.9rem;margin:1rem 0 1.5rem;line-height:1.6">${escHtml(message)}</p><div style="display:flex;gap:0.75rem"><button class="btn btn-danger" style="margin:0;flex:1;border-radius:20px" onclick="window._confirmResolve(true)">${escHtml(okLabel)}</button><button class="btn btn-ghost" style="margin:0;flex:1;border-radius:20px" onclick="window._confirmResolve(false)">${escHtml(cancelLabel)}</button></div>`);
     window._confirmResolve=val=>{window.closeModal();resolve(val)};
   });
 }
