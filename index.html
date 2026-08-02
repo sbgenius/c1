@@ -834,77 +834,78 @@ function handleFileSelect(e){
 async function uploadFiles(files){
   if(_uploadActive){showBusyToast('⚠ Upload already in progress — please wait.');return;}
   window._cancelUpload=false;
-  let allSuccess = true;
-  const panel=document.getElementById('upload-panel');
-  const list=document.getElementById('upload-list');
-  panel.classList.add('active');
   _uploadActive=true;
-  const originalFolderId=currentFolderMeta.id;
-  let anySucceeded=false;
-  for(const file of files){
-    if(window._cancelUpload) break;
-    const uid=`up_${++_uploadCounter}`;
-    const itemEl=document.createElement('div');
-    itemEl.className='upload-item';
-    itemEl.dataset.uid=uid;
-    itemEl.innerHTML=`<div class="upload-item-name">${escHtml(file.name)}</div><div class="upload-progress-bar"><div class="upload-progress-fill" id="upfill_${uid}" style="width:0%"></div></div><div class="upload-status" id="upstat_${uid}">Preparing...</div>`;
-    list.appendChild(itemEl);
-    const fillEl=itemEl.querySelector(`#upfill_${uid}`);
-    const statEl=itemEl.querySelector(`#upstat_${uid}`);
-    const progress=(pct,status,retrying)=>{
-      if(fillEl)fillEl.style.width=pct+'%';
-      if(statEl)statEl.textContent=status;
-      itemEl.classList.toggle('retrying',!!retrying);
-    };
-    try{
-      await uploadSingleFile(file,progress,uid);
-      if(fillEl){fillEl.style.width='100%';fillEl.style.background='var(--success)'}
-      if(statEl)statEl.textContent='✓ Done';
-      itemEl.classList.remove('retrying');
-      delete _pendingUploads[uid];
-      anySucceeded=true;
-      // Persist metadata incrementally, after each successful file,
-      // so a later file's failure can't lose an earlier file's progress.
-      await saveFolderMeta(currentFolderMeta);
-      await saveConfig();
-      updateStats();
-      renderFolder();
-    }catch(e){
-      allSuccess = false;
-      if(fillEl)fillEl.style.background='var(--danger)';
-      itemEl.classList.remove('retrying');
-      const uploadedChunks=(_pendingUploads[uid]&&_pendingUploads[uid].chunks||[]).length;
-      if(statEl)statEl.innerHTML=`✗ ${escHtml(e.message)} ${uploadedChunks>0?`(${uploadedChunks} chunk(s) saved)`:''}`;
-      const retryBtn=document.createElement('button');
-      retryBtn.className='upload-retry-btn';
-      retryBtn.textContent='Retry upload';
-      retryBtn.onclick=async()=>{
-        if(_uploadActive){showBusyToast('⚠ Upload already in progress — please wait.');return;}
-        if(currentFolderMeta.id!==originalFolderId){showBusyToast('⚠ Navigate back to the original folder to retry.');return;}
-        retryBtn.remove();
-        _uploadActive=true;
-        window._cancelUpload=false;
-        try{
-          await uploadSingleFile(file,progress,uid);
-          if(fillEl){fillEl.style.width='100%';fillEl.style.background='var(--success)'}
-          if(statEl)statEl.textContent='✓ Done';
-          itemEl.classList.remove('retrying');
-          delete _pendingUploads[uid];
-          await saveFolderMeta(currentFolderMeta);
-          await saveConfig();
-          updateStats();
-          renderFolder();
-        }catch(e2){
-          if(statEl)statEl.textContent='✗ '+e2.message;
-          itemEl.appendChild(retryBtn);
-        }finally{_uploadActive=false;}
+  try {
+    let allSuccess = true;
+    const panel=document.getElementById('upload-panel');
+    const list=document.getElementById('upload-list');
+    panel.classList.add('active');
+    const originalFolderId=currentFolderMeta.id;
+    let anySucceeded=false;
+    for(const file of files){
+      if(window._cancelUpload) break;
+      const uid=`up_${++_uploadCounter}`;
+      const itemEl=document.createElement('div');
+      itemEl.className='upload-item';
+      itemEl.dataset.uid=uid;
+      itemEl.innerHTML=`<div class="upload-item-name">${escHtml(file.name)}</div><div class="upload-progress-bar"><div class="upload-progress-fill" id="upfill_${uid}" style="width:0%"></div></div><div class="upload-status" id="upstat_${uid}">Preparing...</div>`;
+      list.appendChild(itemEl);
+      const fillEl=itemEl.querySelector(`#upfill_${uid}`);
+      const statEl=itemEl.querySelector(`#upstat_${uid}`);
+      const progress=(pct,status,retrying)=>{
+        if(fillEl)fillEl.style.width=pct+'%';
+        if(statEl)statEl.textContent=status;
+        itemEl.classList.toggle('retrying',!!retrying);
       };
-      itemEl.appendChild(retryBtn);
+      try{
+        await uploadSingleFile(file,progress,uid);
+        if(fillEl){fillEl.style.width='100%';fillEl.style.background='var(--success)'}
+        if(statEl)statEl.textContent='✓ Done';
+        itemEl.classList.remove('retrying');
+        delete _pendingUploads[uid];
+        anySucceeded=true;
+        await saveFolderMeta(currentFolderMeta);
+        await saveConfig();
+        updateStats();
+        renderFolder();
+      }catch(e){
+        allSuccess = false;
+        if(fillEl)fillEl.style.background='var(--danger)';
+        itemEl.classList.remove('retrying');
+        const uploadedChunks=(_pendingUploads[uid]&&_pendingUploads[uid].chunks||[]).length;
+        if(statEl)statEl.innerHTML=`✗ ${escHtml(e.message)} ${uploadedChunks>0?`(${uploadedChunks} chunk(s) saved)`:''}`;
+        const retryBtn=document.createElement('button');
+        retryBtn.className='upload-retry-btn';
+        retryBtn.textContent='Retry upload';
+        retryBtn.onclick=async()=>{
+          if(_uploadActive){showBusyToast('⚠ Upload already in progress — please wait.');return;}
+          if(currentFolderMeta.id!==originalFolderId){showBusyToast('⚠ Navigate back to the original folder to retry.');return;}
+          retryBtn.remove();
+          _uploadActive=true;
+          window._cancelUpload=false;
+          try{
+            await uploadSingleFile(file,progress,uid);
+            if(fillEl){fillEl.style.width='100%';fillEl.style.background='var(--success)'}
+            if(statEl)statEl.textContent='✓ Done';
+            itemEl.classList.remove('retrying');
+            delete _pendingUploads[uid];
+            await saveFolderMeta(currentFolderMeta);
+            await saveConfig();
+            updateStats();
+            renderFolder();
+          }catch(e2){
+            if(statEl)statEl.textContent='✗ '+e2.message;
+            itemEl.appendChild(retryBtn);
+          }finally{_uploadActive=false;}
+        };
+        itemEl.appendChild(retryBtn);
+      }
     }
-  }
-  _uploadActive=false;
-  if(allSuccess && !window._cancelUpload) {
-    setTimeout(()=>closeUploadPanel(), 600);
+    if(allSuccess && !window._cancelUpload) {
+      setTimeout(()=>closeUploadPanel(), 600);
+    }
+  } finally {
+    _uploadActive=false;
   }
 }
 
@@ -1537,14 +1538,16 @@ async function playVideoFile(fileEntry){
           </div>
         </div>
         <div class="img-preview-body" style="padding:0;background:#000">
-          <video id="vault-video" controls autoplay style="width:100%;height:100%;object-fit:contain;display:block;outline:none"></video>
+          <video id="vault-video" controls autoplay playsinline style="width:100%;height:100%;object-fit:contain;display:block;outline:none"></video>
         </div>
       `;
 
       const video=document.getElementById('vault-video');
       let currentBlobUrl=null;
-      // Running blob — each chunk is concatenated and the raw Uint8Array
-      // is immediately eligible for garbage collection, keeping JS heap flat.
+      
+      // Flat array of chunk Blobs. This prevents JS heap exhaustion 
+      // (Uint8Arrays are freed) and avoids WebKit nested-blob crashes.
+      const blobChunks = [];
       let videoBlob=new Blob([],{type:mime});
 
       const updateStatus=()=>{
@@ -1561,7 +1564,10 @@ async function playVideoFile(fileEntry){
         video.src=currentBlobUrl;
         video.currentTime=Math.max(0, currentTime - (forcePlay ? 0.05 : 0));
         if(!wasPaused || forcePlay)video.play().catch(()=>{});
-        if(oldUrl)URL.revokeObjectURL(oldUrl);
+        
+        // Delay revoking the old URL. On mobile (iOS), the media decoder runs in a 
+        // separate process. Revoking instantly crashes the decoder if it's currently seeking.
+        if(oldUrl) setTimeout(() => URL.revokeObjectURL(oldUrl), 10000);
         window._currentVideoUrl=currentBlobUrl;
         needUpdate=false;
       };
@@ -1575,7 +1581,8 @@ async function playVideoFile(fileEntry){
       // Download first chunk to start playback quickly
       const enc0=await ghGetFileRawRetry(username,sorted[0].repoName,sorted[0].filename,pat);
       const dec0=await decryptData(enc0,key);
-      videoBlob=new Blob([videoBlob,dec0],{type:mime});
+      blobChunks.push(new Blob([dec0]));
+      videoBlob=new Blob(blobChunks,{type:mime});
       loadedChunks=1;
       needUpdate=true;
       applyBufferUpdate();
@@ -1594,8 +1601,9 @@ async function playVideoFile(fileEntry){
               if(window._cancelVideoBuffer || !document.getElementById('vault-video'))return;
               const dec=await decryptData(enc,key);
 
-              // Concatenate into running blob — dec is freed after this line
-              videoBlob=new Blob([videoBlob,dec],{type:mime});
+              // Push to flat array and reconstruct running blob
+              blobChunks.push(new Blob([dec]));
+              videoBlob=new Blob(blobChunks,{type:mime});
               loadedChunks++;
               needUpdate=true;
 
@@ -1605,7 +1613,12 @@ async function playVideoFile(fileEntry){
               }
 
               updateStatus();
-            }catch(e){console.warn('Chunk download failed:',e)}
+            }catch(e){
+              console.warn('Chunk download failed:',e);
+              const s=document.getElementById('video-load-status');
+              if(s) s.textContent = 'Network error: Buffering stopped';
+              break; // Stop buffering. Skipping chunks corrupts the MP4.
+            }
           }
           // Enable save button once fully loaded
           const saveBtn=document.getElementById('video-save-btn');
