@@ -722,9 +722,9 @@ function renderFolder(){
     const card=document.createElement('div');
     card.className='file-card';
     card.dataset.id=item.id;card.dataset.type=item._type;
-    const sizeStr=item._type==='file'?formatSize(item.size||0):'—';
+    const sizeStr=item._type==='folder'?`${(item.files||[]).length} items`:formatSize(item.size||0);
     const dateStr=new Date(item.updatedAt||item.createdAt||Date.now()).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
-    card.innerHTML=`<div class="file-card-name-cell"><span class="file-type-icon">${getListIcon(item)}</span><span class="file-name">${escHtml(item.name)}${item.streamable ? '<span style="background:#00f0ff;color:#000;font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:4px;margin-left:0.5rem;vertical-align:middle;font-weight:800;box-shadow:0 0 8px rgba(0,240,255,0.4)">STREAM</span>' : ''}</span></div><div class="file-size-cell">${sizeStr}</div><div class="file-date-cell">${dateStr}</div><button class="file-card-menu" onclick="showItemMenu(event,'${item.id}','${item._type}')">⋮</button>`;
+    card.innerHTML=`<div class="file-card-name-cell"><span class="file-type-icon">${getListIcon(item)}</span><span class="file-name">${escHtml(item.name)}</span></div><div class="file-size-cell">${sizeStr}</div><div class="file-date-cell">${dateStr}</div><button class="file-card-menu" onclick="showItemMenu(event,'${item.id}','${item._type}')">⋮</button>`;
     const isMobile = window.innerWidth <= 768;
     if(item._type==='folder'){
       card.addEventListener('dblclick',()=> { if(!isMobile) openFolder(item); });
@@ -734,7 +734,7 @@ function renderFolder(){
         else toggleSelect(item.id,card);
       });
     }else{
-      const openAction = () => isImage(item)?previewImage(item):isPdf(item)?previewPdfFile(item):isReadable(item)?previewTextFile(item):(isVideo(item)&&item.streamable)?playVideoFile(item):null;
+      const openAction = () => isImage(item)?previewImage(item):isPdf(item)?previewPdfFile(item):isReadable(item)?previewTextFile(item):null;
       card.addEventListener('dblclick',()=> { if(!isMobile) openAction(); });
       card.addEventListener('click',(e)=>{
         if(e.target.classList.contains('file-card-menu')) return;
@@ -960,10 +960,8 @@ async function uploadSingleFile(file,progress,uid){
 
   // All chunks uploaded successfully — build the file entry and add to
   // the in-memory folder meta. Caller (uploadFiles) persists it to GitHub.
-  const ext=(file.name||'').split('.').pop().toLowerCase();
-  const isStreamable=['mp4','webm'].includes(ext);
-  const finalMime=isStreamable?(ext==='mp4'?'video/mp4':'video/webm'):(file.type||'application/octet-stream');
-  const fileEntry={id:fileId,name:file.name,size:totalSize,mimeType:finalMime,numChunks,chunks:state.chunks,streamable:isStreamable,createdAt:Date.now(),updatedAt:Date.now()};
+  const finalMime=file.type||'application/octet-stream';
+  const fileEntry={id:fileId,name:file.name,size:totalSize,mimeType:finalMime,numChunks,chunks:state.chunks,createdAt:Date.now(),updatedAt:Date.now()};
   if(!currentFolderMeta.files)currentFolderMeta.files=[];
   currentFolderMeta.files.push(fileEntry);
   session.config.totalFiles=(session.config.totalFiles||0)+1;
@@ -1005,10 +1003,7 @@ function isReadable(fileEntry){
   const ext=(fileEntry.name||'').split('.').pop().toLowerCase();
   return READABLE_EXTS.includes(ext)&&(fileEntry.size||0)<=5*1024*1024;
 }
-function isVideo(fileEntry){
-  const ext=(fileEntry.name||'').split('.').pop().toLowerCase();
-  return['mp4','mkv','avi','mov','webm','flv','mts','m2ts','ts','m4v','3gp'].includes(ext);
-}
+
 function getImageMime(ext){
   return{svg:'image/svg+xml',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',avif:'image/avif',heic:'image/heic'}[ext]||'image/jpeg';
 }
@@ -1508,178 +1503,6 @@ function setupDragDrop(){
   app.addEventListener('drop',e=>{e.preventDefault();counter=0;overlay.classList.remove('active');const files=Array.from(e.dataTransfer.files);if(files.length>0)uploadFiles(files)});
 }
 
-
-
-async function playVideoFile(fileEntry){
-  showModal(`<div style="padding:3rem;text-align:center;color:var(--text3);font-size:0.82rem"><div class="spinner" style="margin:0 auto 1rem"></div>Loading ${escHtml(fileEntry.name)}...</div>`);
-  document.getElementById('modal-box').classList.add('img-preview');
-
-  if(fileEntry.streamable){
-    // Progressive streaming with memory-efficient Blob concatenation.
-    // Each decrypted chunk is merged into a running Blob and the raw
-    // Uint8Array is immediately freed from JS heap. The browser manages
-    // the Blob store separately (can swap to disk for large files).
-    try{
-      const{pat,key,username}=session;
-      const sorted=[...(fileEntry.chunks||[])].sort((a,b)=>a.chunkIndex-b.chunkIndex);
-      const mime=fileEntry.mimeType||'video/mp4';
-      const totalChunks=sorted.length;
-      let loadedChunks=0;
-      let needUpdate=false;
-
-      // Show player immediately with loading state
-      document.getElementById('modal-content').innerHTML=`
-        <div class="img-preview-bar">
-          <span class="img-preview-name">${escHtml(fileEntry.name)}</span>
-          <span class="gallery-counter" id="video-load-status">Buffering 0%...</span>
-          <div class="img-preview-actions">
-            <button class="img-preview-btn" id="video-save-btn" disabled>↓ Save</button>
-            <button class="img-preview-btn" onclick="closeModal()">✕</button>
-          </div>
-        </div>
-        <div class="img-preview-body" style="padding:0;background:#000">
-          <video id="vault-video" controls autoplay playsinline style="width:100%;height:100%;object-fit:contain;display:block;outline:none"></video>
-        </div>
-      `;
-
-      const video=document.getElementById('vault-video');
-      let currentBlobUrl=null;
-      
-      // Flat array of chunk Blobs. This prevents JS heap exhaustion 
-      // (Uint8Arrays are freed) and avoids WebKit nested-blob crashes.
-      const blobChunks = [];
-      let videoBlob=new Blob([],{type:mime});
-
-      const updateStatus=()=>{
-        const s=document.getElementById('video-load-status');
-        if(s)s.textContent=loadedChunks>=totalChunks?formatSize(fileEntry.size||0):`Buffering ${Math.round((loadedChunks/totalChunks)*100)}%...`;
-      };
-
-      const applyBufferUpdate=(forcePlay=false)=>{
-        if(!needUpdate) return;
-        const currentTime=video.currentTime;
-        const wasPaused=video.paused;
-        const oldUrl=currentBlobUrl;
-        currentBlobUrl=URL.createObjectURL(videoBlob);
-        video.src=currentBlobUrl;
-        video.currentTime=Math.max(0, currentTime - (forcePlay ? 0.05 : 0));
-        if(!wasPaused || forcePlay)video.play().catch(()=>{});
-        
-        // Delay revoking the old URL. On mobile (iOS), the media decoder runs in a 
-        // separate process. Revoking instantly crashes the decoder if it's currently seeking.
-        if(oldUrl) setTimeout(() => URL.revokeObjectURL(oldUrl), 10000);
-        window._currentVideoUrl=currentBlobUrl;
-        needUpdate=false;
-      };
-
-      video.addEventListener('ended', ()=>{ if(loadedChunks<totalChunks && needUpdate) applyBufferUpdate(true); });
-      video.addEventListener('waiting', ()=>{ if(needUpdate) applyBufferUpdate(true); });
-      video.addEventListener('stalled', ()=>{ if(needUpdate) applyBufferUpdate(true); });
-      video.addEventListener('error', ()=>{ if(needUpdate) applyBufferUpdate(true); });
-      video.addEventListener('pause', ()=>{ if(needUpdate && video.currentTime < video.duration-0.5) applyBufferUpdate(); });
-
-      // Download first chunk to start playback quickly
-      const enc0=await ghGetFileRawRetry(username,sorted[0].repoName,sorted[0].filename,pat);
-      const dec0=await decryptData(enc0,key);
-      blobChunks.push(new Blob([dec0]));
-      videoBlob=new Blob(blobChunks,{type:mime});
-      loadedChunks=1;
-      needUpdate=true;
-      applyBufferUpdate();
-      updateStatus();
-
-      window._cancelVideoBuffer = false;
-
-      // Download remaining chunks in the background
-      if(loadedChunks<totalChunks){
-        (async()=>{
-          for(let i=loadedChunks;i<totalChunks;i++){
-            // Stop if modal was closed
-            if(window._cancelVideoBuffer || !document.getElementById('vault-video'))return;
-            try{
-              const enc=await ghGetFileRawRetry(username,sorted[i].repoName,sorted[i].filename,pat);
-              if(window._cancelVideoBuffer || !document.getElementById('vault-video'))return;
-              const dec=await decryptData(enc,key);
-
-              // Push to flat array and reconstruct running blob
-              blobChunks.push(new Blob([dec]));
-              videoBlob=new Blob(blobChunks,{type:mime});
-              loadedChunks++;
-              needUpdate=true;
-
-              // Only forcefully apply if the video is paused, otherwise wait for 'ended' or 'waiting'
-              if(video.paused){
-                 applyBufferUpdate();
-              }
-
-              updateStatus();
-            }catch(e){
-              console.warn('Chunk download failed:',e);
-              const s=document.getElementById('video-load-status');
-              if(s) s.textContent = 'Network error: Buffering stopped';
-              break; // Stop buffering. Skipping chunks corrupts the MP4.
-            }
-          }
-          // Enable save button once fully loaded
-          const saveBtn=document.getElementById('video-save-btn');
-          if(saveBtn){
-            saveBtn.disabled=false;
-            saveBtn.onclick=()=>{
-              const a=document.createElement('a');
-              a.href=currentBlobUrl;
-              a.download=fileEntry.name;
-              a.click();
-            };
-          }
-          window._currentVideoUrl=currentBlobUrl;
-        })();
-      } else {
-        const saveBtn=document.getElementById('video-save-btn');
-        if(saveBtn){
-          saveBtn.disabled=false;
-          saveBtn.onclick=()=>{
-            const a=document.createElement('a');
-            a.href=currentBlobUrl;
-            a.download=fileEntry.name;
-            a.click();
-          };
-        }
-      }
-
-      window._currentVideoUrl=currentBlobUrl;
-
-    }catch(e){
-      document.getElementById('modal-box').classList.remove('img-preview');
-      document.getElementById('modal-content').innerHTML=`<div style="padding:3rem;text-align:center;color:var(--text3);font-size:0.82rem"><div class="spinner" style="margin:0 auto 1rem"></div>Loading ${escHtml(fileEntry.name)}...</div>`;
-    }
-  } else {
-    // Non-streamable video: download entire file then play
-    try{
-      const merged=await fetchFileData(fileEntry);
-      const mime=fileEntry.mimeType||'video/mp4';
-      const blob=new Blob([merged],{type:mime});
-      const u=URL.createObjectURL(blob);
-      document.getElementById('modal-content').innerHTML=`
-        <div class="img-preview-bar">
-          <span class="img-preview-name">${escHtml(fileEntry.name)}</span>
-          <span class="gallery-counter">${formatSize(fileEntry.size||merged.length)}</span>
-          <div class="img-preview-actions">
-            <button class="img-preview-btn" onclick="(()=>{const a=document.createElement('a');a.href='${u}';a.download='${escHtml(fileEntry.name)}';a.click()})()">↓ Save</button>
-            <button class="img-preview-btn" onclick="closeModal()">✕</button>
-          </div>
-        </div>
-        <div class="img-preview-body" style="padding:0;background:#000">
-          <video controls autoplay style="width:100%;height:100%;object-fit:contain;display:block;outline:none" src="${u}"></video>
-        </div>
-      `;
-      window._currentVideoUrl=u;
-    }catch(e){
-      document.getElementById('modal-box').classList.remove('img-preview');
-      document.getElementById('modal-content').innerHTML=`<div style="padding:3rem;text-align:center;color:var(--text3);font-size:0.82rem"><div class="spinner" style="margin:0 auto 1rem"></div>Loading ${escHtml(fileEntry.name)}...</div>`;
-    }
-  }
-}
-
 // ── STATS ─────────────────────────────────────────────────────────
 function updateStats(){
   const config=session&&session.config;if(!config)return;
@@ -1720,13 +1543,7 @@ function showModal(html){
 function closeModal(event){
   if(event&&event.target&&event.target!==document.getElementById('modal-overlay'))return;
   cleanupGallery();
-  window._cancelVideoBuffer = true;
-  
-  const v = document.getElementById('vault-video');
-  if(v) { v.pause(); v.removeAttribute('src'); v.load(); }
-
   if(window._currentPdfUrl){URL.revokeObjectURL(window._currentPdfUrl);delete window._currentPdfUrl;}
-  if(window._currentVideoUrl){URL.revokeObjectURL(window._currentVideoUrl);delete window._currentVideoUrl;}
 
 
   document.getElementById('modal-overlay').classList.add('hidden');
