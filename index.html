@@ -165,9 +165,13 @@
   .fab-container{position:fixed;bottom:2rem;left:2rem;z-index:900;display:flex;flex-direction:column;align-items:flex-start;gap:1rem}
   .fab-menu{display:flex;flex-direction:column;align-items:flex-start;gap:0.8rem;opacity:0;pointer-events:none;transform:translateY(20px);transition:all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)}
   .fab-menu.active{opacity:1;pointer-events:all;transform:translateY(0)}
-  .fab-main{width:56px;height:56px;border-radius:50%;background:var(--success);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;z-index:901}
+  .fab-item{display:flex;align-items:center;gap:0.65rem;padding:0.75rem 1.25rem;background:var(--card2);border:1px solid var(--border);border-radius:30px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.85rem;font-weight:600;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,0.4);transition:all 0.2s}
+  .fab-item:hover{background:var(--bg3);border-color:var(--accent);color:var(--accent2);transform:translateY(-2px)}
+  .fab-item.primary{background:var(--success);border-color:rgba(255,255,255,0.1);color:#fff}
+  .fab-item.primary:hover{filter:brightness(1.15)}
+  .fab-main{width:60px;height:60px;border-radius:50%;background:var(--success);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative;z-index:901;box-shadow:0 6px 16px rgba(0,0,0,0.5)}
   .fab-main:hover{transform:scale(1.05);filter:brightness(1.1)}
-  .fab-main svg{width:26px;height:26px;transition:transform 0.2s}
+  .fab-main svg{width:28px;height:28px;transition:transform 0.2s}
   .fab-main.active svg{transform:rotate(45deg)}
   @media (max-width: 768px) {
     .topbar { padding: 0 1rem; }
@@ -220,7 +224,7 @@
     .upload-panel {
       width: calc(100vw - 3rem);
       right: 1.5rem;
-      bottom: 1.5rem;
+      bottom: calc(2rem + 60px);
     }
     .stats-bar {
       padding: 0.8rem;
@@ -344,8 +348,14 @@
       <!-- Floating Action Button -->
       <div class="fab-container">
         <div class="fab-menu" id="fab-menu">
-          <button class="toolbar-btn" onclick="showNewFolderModal(); toggleFab()">+ New Folder</button>
-          <button class="toolbar-btn primary" onclick="triggerUpload()">↑ Upload File</button>
+          <button class="fab-item" onclick="showNewFolderModal(); toggleFab()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+            New Folder
+          </button>
+          <button class="fab-item primary" onclick="triggerUpload()">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Upload File
+          </button>
         </div>
         <button class="fab-main" onclick="toggleFab()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
