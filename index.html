@@ -71,6 +71,7 @@
   .toolbar{display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap}
   .toolbar-btn{display:flex;align-items:center;gap:0.4rem;padding:0.45rem 0.9rem;border:1px solid var(--border);background:var(--card2);color:var(--text2);font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:600;cursor:pointer;transition:all 0.15s}
   .toolbar-btn:hover{border-color:var(--accent);color:var(--accent2);background:var(--glow)}
+  .mobile-back-btn{display:none;background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:0.25rem 0.6rem;cursor:pointer;align-items:center;justify-content:center;transition:all 0.15s;margin-right:0.2rem;}
   .toolbar-btn.primary{background:var(--success);border-color:var(--success);color:white}
   .toolbar-btn.primary:hover{filter:brightness(1.12)}
   .storage-bar-wrap{margin-left:auto;display:flex;align-items:center;gap:0.75rem;font-size:0.7rem;color:var(--text3)}
@@ -200,6 +201,14 @@
       width: 36px;
       height: 36px;
     }
+    .file-card[data-type="folder"] .file-size-cell,
+    .file-card[data-type="folder"] .file-date-cell {
+      display: none !important;
+    }
+    .topbar-path { display: none !important; }
+    .mobile-back-btn { display: flex; }
+    .topbar-actions { flex: 1; justify-content: space-between; }
+    .topbar-storage { margin-right: auto !important; margin-left: 0.5rem !important; }
     .fab-container {
       bottom: 1.5rem;
       left: 1.5rem;
@@ -295,10 +304,12 @@
   <!-- MAIN APP -->
   <div id="main-app">
     <div class="topbar">
-
+      <button class="mobile-back-btn" id="mobile-back-btn" onclick="navigateToPath(currentPath.length - 2)">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+      </button>
       <div class="topbar-path" id="breadcrumb"></div>
       <div class="topbar-actions">
-        <span id="topbar-storage" style="font-size: 0.85rem; color: var(--text2); margin-right: 0.5rem; font-weight: 500;"></span>
+        <span id="topbar-storage" class="topbar-storage" style="font-size: 0.85rem; color: var(--text2); margin-right: 0.5rem; font-weight: 500;"></span>
         <div class="user-chip" id="user-chip" onclick="doLogout()">
           <span id="chip-username"></span>
           <span style="color:var(--text3)">· logout</span>
@@ -730,6 +741,16 @@ function updateBreadcrumb(){
   const chevron=`<svg class="path-sep" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
   for(let i=0;i<currentPath.length;i++){const seg=currentPath[i];html+=`${chevron}<span class="path-seg" onclick="navigateToPath(${i})">${escHtml(seg.name)}</span>`}
   el.innerHTML=html;
+
+  const mBtn = document.getElementById('mobile-back-btn');
+  if(mBtn) {
+    if(currentPath.length > 0) {
+      mBtn.style.display = 'flex';
+      mBtn.onclick = () => navigateToPath(currentPath.length - 2);
+    } else {
+      mBtn.style.display = 'none';
+    }
+  }
 }
 
 // ── NEW FOLDER ────────────────────────────────────────────────────
