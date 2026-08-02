@@ -133,7 +133,7 @@
   ::-webkit-scrollbar-track{background:transparent}
   ::-webkit-scrollbar-thumb{background:var(--border)}
   ::-webkit-scrollbar-thumb:hover{background:var(--text3)}
-  .busy-toast{position:fixed;top:1.2rem;left:50%;transform:translateX(-50%) translateX(-50vw/1.1);z-index:9999;background:var(--card2);border:1px solid var(--warn);color:var(--warn);font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;padding:0.65rem 1.2rem;box-shadow:0 4px 24px rgba(0,0,0,0.5);animation:fadeUp 0.18s ease;pointer-events:none;white-space:nowrap}
+  .busy-toast{position:fixed;top:1.2rem;left:50%;transform:translateX(-50%);z-index:9999;background:var(--card2);border:1px solid var(--warn);color:var(--warn);font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:600;padding:0.65rem 1.2rem;box-shadow:0 4px 24px rgba(0,0,0,0.5);animation:fadeUp 0.18s ease;pointer-events:none;white-space:normal;text-align:center;width:max-content;max-width:90vw;border-radius:6px;}
   .search-input{width:100%;background:var(--bg3);border:1px solid transparent;border-radius:6px;padding:0.75rem 1rem;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:0.85rem;outline:none;transition:all 0.2s}
   .search-input:focus{border-color:var(--accent);background:var(--card)}
   .search-results-dropdown{position:absolute;top:calc(100% + 0.3rem);left:0;right:0;background:var(--card2);border:1px solid var(--border);border-radius:6px;max-height:300px;overflow-y:auto;z-index:900;box-shadow:0 8px 32px rgba(0,0,0,0.5)}
@@ -227,12 +227,12 @@
       gap: 1rem;
     }
     .auth-box {
-      border: none;
-      border-radius: 0;
+      border: 1px solid var(--border);
+      border-radius: 8px;
     }
     .auth-screen {
-      padding: 0;
-      align-items: flex-start;
+      padding: 1rem;
+      align-items: center;
     }
     .img-preview-name {
       max-width: 45vw;
@@ -715,12 +715,22 @@ function renderFolder(){
     const sizeStr=item._type==='file'?formatSize(item.size||0):'—';
     const dateStr=new Date(item.updatedAt||item.createdAt||Date.now()).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
     card.innerHTML=`<div class="file-card-name-cell"><span class="file-type-icon">${getListIcon(item)}</span><span class="file-name">${escHtml(item.name)}${item.streamable ? '<span style="background:#00f0ff;color:#000;font-size:0.6rem;padding:0.1rem 0.35rem;border-radius:4px;margin-left:0.5rem;vertical-align:middle;font-weight:800;box-shadow:0 0 8px rgba(0,240,255,0.4)">STREAM</span>' : ''}</span></div><div class="file-size-cell">${sizeStr}</div><div class="file-date-cell">${dateStr}</div><button class="file-card-menu" onclick="showItemMenu(event,'${item.id}','${item._type}')">⋮</button>`;
+    const isMobile = window.innerWidth <= 768;
     if(item._type==='folder'){
-      card.addEventListener('dblclick',()=>openFolder(item));
-      card.addEventListener('click',(e)=>{if(!e.target.classList.contains('file-card-menu'))toggleSelect(item.id,card)});
+      card.addEventListener('dblclick',()=> { if(!isMobile) openFolder(item); });
+      card.addEventListener('click',(e)=>{
+        if(e.target.classList.contains('file-card-menu')) return;
+        if(isMobile) openFolder(item);
+        else toggleSelect(item.id,card);
+      });
     }else{
-      card.addEventListener('click',(e)=>{if(!e.target.classList.contains('file-card-menu'))toggleSelect(item.id,card)});
-      card.addEventListener('dblclick',()=>isImage(item)?previewImage(item):isPdf(item)?previewPdfFile(item):isReadable(item)?previewTextFile(item):(isVideo(item)&&item.streamable)?playVideoFile(item):null);
+      const openAction = () => isImage(item)?previewImage(item):isPdf(item)?previewPdfFile(item):isReadable(item)?previewTextFile(item):(isVideo(item)&&item.streamable)?playVideoFile(item):null;
+      card.addEventListener('dblclick',()=> { if(!isMobile) openAction(); });
+      card.addEventListener('click',(e)=>{
+        if(e.target.classList.contains('file-card-menu')) return;
+        if(isMobile) openAction();
+        else toggleSelect(item.id,card);
+      });
     }
     grid.appendChild(card);
   }
