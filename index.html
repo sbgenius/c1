@@ -205,10 +205,14 @@
     .file-card[data-type="folder"] .file-date-cell {
       display: none !important;
     }
+    .desktop-only { display: none !important; }
     .topbar-path { display: none !important; }
-    .mobile-back-btn { display: flex; }
-    .topbar-actions { flex: 1; justify-content: space-between; }
-    .topbar-storage { margin-right: auto !important; margin-left: 0.5rem !important; }
+    .mobile-back-btn { display: flex; margin-right: 0; padding: 0.25rem 0.4rem; }
+    .topbar { padding: 0 0.6rem; gap: 0.3rem; }
+    .topbar-actions { flex: 1; justify-content: space-between; gap: 0.3rem; }
+    .topbar-storage { margin-right: auto !important; margin-left: 0.3rem !important; font-size: 0.75rem !important; }
+    #chip-username { display: none; }
+    .logout-text::before { display: none; }
     .fab-container {
       bottom: 1.5rem;
       left: 1.5rem;
@@ -312,7 +316,7 @@
         <span id="topbar-storage" class="topbar-storage" style="font-size: 0.85rem; color: var(--text2); margin-right: 0.5rem; font-weight: 500;"></span>
         <div class="user-chip" id="user-chip" onclick="doLogout()">
           <span id="chip-username"></span>
-          <span style="color:var(--text3)">· logout</span>
+          <span class="logout-text"><span class="desktop-only" style="color:var(--text3)">· </span>logout</span>
         </div>
       </div>
     </div>
