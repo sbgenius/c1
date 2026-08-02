@@ -783,8 +783,10 @@ function showNewFolderModal(){
   setTimeout(()=>document.getElementById('new-folder-name').focus(),100);
 }
 async function createFolder(){
+  if(window._isCreatingFolder)return;
   const name=document.getElementById('new-folder-name').value.trim();
   if(!name)return;
+  window._isCreatingFolder=true;
   const msgEl=document.getElementById('new-folder-msg');
   showMsg(msgEl,'info','Creating folder...');
   try{
@@ -796,6 +798,7 @@ async function createFolder(){
     await saveFolderMeta(currentFolderMeta);
     closeModal();renderFolder();
   }catch(e){showMsg(msgEl,'error',e.message)}
+  finally{window._isCreatingFolder=false;}
 }
 
 // ── UPLOAD ────────────────────────────────────────────────────────
@@ -1453,8 +1456,10 @@ function renameItem(item,type){
   setTimeout(()=>{const el=document.getElementById('rename-input');el.focus();el.select()},100);
 }
 async function doRename(itemId,type){
+  if(window._isRenaming)return;
   const newName=document.getElementById('rename-input').value.trim();
   if(!newName)return;
+  window._isRenaming=true;
   const msgEl=document.getElementById('rename-msg');showMsg(msgEl,'info','Renaming...');
   try{
     if(type==='folder'){
@@ -1463,6 +1468,7 @@ async function doRename(itemId,type){
     }else{const file=currentFolderMeta.files.find(f=>f.id===itemId);if(file)file.name=newName}
     await saveFolderMeta(currentFolderMeta);closeModal();renderFolder();
   }catch(e){showMsg(msgEl,'error',e.message)}
+  finally{window._isRenaming=false;}
 }
 
 // ── SELECTION ─────────────────────────────────────────────────────
