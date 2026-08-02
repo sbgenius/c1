@@ -14,7 +14,8 @@
     --card:#161b22;--card2:#21262d;--glow:transparent;
   }
   html { font-size: 110%; }
-  *{box-sizing:border-box;margin:0;padding:0;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  button,a{outline:none;}
   body{font-family:'JetBrains Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
   #app{position:relative;z-index:1}
   .auth-screen{display:flex;min-height:100vh;align-items:center;justify-content:center;padding:2rem;padding-bottom:12vh}
@@ -1242,7 +1243,10 @@ async function downloadFile(fileEntry){
 
   const fetchChunk=(chunk,i)=>ghGetFileRawRetry(
     username,chunk.repoName,chunk.filename,pat,
-    (attempt,max,wait)=>setProgress(Math.round((i/sorted.length)*100),`Chunk ${i+1}/${sorted.length} — network error, retry ${attempt}/${max} in ${Math.round(wait/1000)}s...`)
+    (attempt,max,wait)=>{
+      const p=Math.round((i/sorted.length)*100);
+      setProgress(p,`Downloading ${p}% — retry ${attempt}/${max} in ${Math.round(wait/1000)}s...`);
+    }
   );
 
   // ── PATH A: File System Access API (Chrome/Edge) — true streaming, any file size ──
@@ -1252,7 +1256,8 @@ async function downloadFile(fileEntry){
       const handle=await window.showSaveFilePicker({suggestedName:fileEntry.name,types:[{description:'File',accept:{[mime]:[]}}]});
       writable=await handle.createWritable();
       for(let i=0;i<sorted.length;i++){
-        setProgress(Math.round((i/sorted.length)*100),`Chunk ${i+1}/${sorted.length}...`);
+        const p=Math.round((i/sorted.length)*100);
+        setProgress(p,`Downloading ${p}%...`);
         const enc=await fetchChunk(sorted[i],i);
         const dec=await decryptData(enc,key);
         await writable.write(dec);
@@ -1282,7 +1287,8 @@ async function downloadFile(fileEntry){
   try{
     const decryptedChunks=[];
     for(let i=0;i<sorted.length;i++){
-      setProgress(Math.round(((i+1)/sorted.length)*90),`Chunk ${i+1}/${sorted.length}...`);
+      const p=Math.round((i/sorted.length)*100);
+      setProgress(p,`Downloading ${p}%...`);
       const enc=await fetchChunk(sorted[i],i);
       const dec=await decryptData(enc,key);
       decryptedChunks.push(dec);
